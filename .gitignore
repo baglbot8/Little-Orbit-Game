@@ -1,0 +1,7 @@
+.godot/
+.DS_Store
+captures/
+exports/
+web/.tools/
+web/.preview/
+*.log
