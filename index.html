@@ -98,7 +98,7 @@ for (const key of ['AudioContext','webkitAudioContext']) {
  const slow=setTimeout(()=>{if(loading)status.textContent='Still loading… the first visit can take a little longer. Keep this tab open.';},20000);
  try {
   if(typeof Engine==='undefined')throw new Error('The game engine did not download.');
-  const config={"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":9168552,"index.wasm":39513091},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+  const config={"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":9168984,"index.wasm":39513091},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
   // Safari can retain a previous Godot package after the page itself updates.
   // Version the heavy engine requests from the export's generated file sizes so
   // each changed build gets a fresh URL without changing the saved-game origin.
