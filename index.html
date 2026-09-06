@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#142b35">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Little Orbit">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
+<link rel="icon" type="image/png" href="./icon-192.png">
+<link rel="manifest" href="./manifest.webmanifest">
+<title>Little Orbit</title>
+<style>
+:root{color-scheme:dark;font-family:ui-rounded,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#142b35;color:#f6f0dd}*{box-sizing:border-box}[hidden]{display:none!important}html,body{margin:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none}#frame{position:fixed;inset:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}canvas{display:block;width:100%;height:100%;outline:none;touch-action:none}#cover{position:fixed;inset:0;display:flex;flex-direction:column;padding:max(24px,env(safe-area-inset-top)) max(24px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left));background:radial-gradient(ellipse at 20% 15%,#294b50,transparent 65%),#142b35;overflow:auto}#cover[hidden]{display:none}.card{flex:none;margin:auto;width:min(100%,390px);text-align:center}.icon{width:112px;height:112px;border-radius:26px;box-shadow:0 12px 40px #081a2460}h1{font-size:clamp(30px,8vw,43px);letter-spacing:-1.5px;margin:18px 0 10px}p{line-height:1.55;color:#c9dacf;margin:10px 0}small{display:block;font-size:12px;line-height:1.6;color:#a9c1b8;margin-top:18px}button{font:inherit;font-weight:700;min-height:52px;min-width:170px;background:#d5e5bc;color:#173b38;border:0;border-radius:18px;padding:14px 26px;margin-top:14px;cursor:pointer}button:disabled{opacity:.5;cursor:wait}button:focus-visible{outline:3px solid #f9dc92;outline-offset:4px}progress{display:block;width:100%;height:6px;margin:23px 0 12px;accent-color:#d5e5bc}#notice{position:fixed;left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));background:#213b43;border:1px solid #8cac99;border-radius:12px;padding:12px;font-size:13px;z-index:5}#notice[hidden]{display:none}#notice button{min-width:44px;min-height:44px;padding:6px 12px;margin:0 0 0 8px;font-size:13px}.details{white-space:pre-wrap;word-break:break-word;font-size:12px;color:#edc9a6}noscript{position:fixed;inset:20%;background:#142b35;padding:24px}
+</style>
+<style>
+#turn-note{position:fixed;left:50%;bottom:max(16px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(340px,calc(100% - 24px));padding:12px 16px;background:#f6efdbea;color:#29474c;border:1px solid #a7bcb0;border-radius:22px;text-align:center;z-index:6;box-shadow:0 6px 24px #081a2440;font-size:14px}#turn-note button{display:block;margin:8px auto 0;padding:4px 12px;min-height:44px;min-width:100px;font-size:12px;background:transparent;color:#48655f} @media(orientation:landscape){#turn-note{display:none}}
+</style>
+<link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
+<link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
+
+</head>
+<body>
+<div id="frame"><canvas id="canvas" tabindex="0" aria-label="Little Orbit game" inert>Your browser needs WebGL 2 to play Little Orbit.</canvas></div>
+<section id="cover" aria-label="Start Little Orbit"><div class="card">
+<img class="icon" src="./icon-192.png" width="112" height="112" alt="A little astronaut on a green planet">
+<h1>Little Orbit</h1><p>A small home in a very big universe.</p>
+<p>Turn your phone sideways for a wider view of your world.</p>
+<progress id="progress" aria-label="Downloading your orbit"></progress>
+<p id="status" role="status" aria-live="polite">Gathering your neighborhood…</p>
+<button id="play" disabled>Loading…</button>
+<p id="error" class="details" hidden></p>
+<small id="save-note">Progress stays in this browser when storage is available. Private browsing, clearing website data, or device cleanup can erase it.</small>
+<small>On iPhone: open in Safari, tap Share → Add to Home Screen.<br>The icon opens the web game. Internet is still needed.</small>
+</div></section>
+<div id="notice" role="status" hidden><span></span><button type="button">Dismiss</button></div>
+<aside id="turn-note" hidden aria-label="Landscape play">A little more room to explore.<br>Turn your phone sideways.<button type="button">Keep this view</button></aside>
+<noscript>Enable JavaScript in Safari to play Little Orbit.</noscript>
+<script>
+// Capture the real contexts made by the engine, so Play resumes those contexts.
+// Resuming an unrelated temporary context would not unlock Godot's audio.
+window.LittleOrbit = {contexts: new Set(), pixelRatio: 1};
+for (const key of ['AudioContext','webkitAudioContext']) {
+ const Native = window[key];
+ if (Native) window[key] = new Proxy(Native,{construct(target,args){const ctx=Reflect.construct(target,args);LittleOrbit.contexts.add(ctx);ctx.suspend().catch(()=>{});return ctx;}});
+}
+</script>
+<script src="index.js"></script>
+<script>
+(() => {
+ const canvas=document.getElementById('canvas'),frame=document.getElementById('frame');
+ const cover=document.getElementById('cover'),play=document.getElementById('play'),status=document.getElementById('status'),progress=document.getElementById('progress');
+ const notice=document.getElementById('notice');
+ const turnNote=document.getElementById('turn-note');
+ let turnDismissed=false;
+ function syncTurnNote(){turnNote.hidden=!started||turnDismissed||!matchMedia('(orientation: portrait)').matches||!(matchMedia('(pointer: coarse)').matches||new URLSearchParams(location.search).get('touch')==='1');}
+ turnNote.querySelector('button').onclick=()=>{turnDismissed=true;syncTurnNote();canvas.focus();};
+ window.addEventListener('resize',syncTurnNote);
+ let failed=false,started=false,loading=true;
+ function notify(message){notice.querySelector('span').textContent=message;notice.hidden=false;}
+ notice.querySelector('button').onclick=()=>{notice.hidden=true;};
+ function fail(error){failed=true;loading=false;cover.hidden=false;canvas.inert=true;status.textContent='Your orbit could not open.';progress.hidden=true;document.getElementById('error').hidden=false;document.getElementById('error').textContent=String(error?.message||error)+'\nCheck your connection, then reload. If this repeats, update Safari and close other heavy tabs.';play.disabled=false;play.textContent='Reload';}
+ function resize(){LittleOrbit.pixelRatio=1;canvas.width=Math.round(frame.clientWidth*LittleOrbit.pixelRatio);canvas.height=Math.round(frame.clientHeight*LittleOrbit.pixelRatio);}
+ new ResizeObserver(resize).observe(frame);window.addEventListener('resize',resize);resize();
+ canvas.addEventListener('contextmenu',event=>event.preventDefault());
+ canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();fail('Safari lost the graphics context. Reload to reopen your last saved progress.');});
+ play.addEventListener('click',()=>{
+  if(failed){location.reload();return;}
+  // Keep all resumes in this synchronous user gesture, before any await.
+  const resumes=Array.from(LittleOrbit.contexts,ctx=>ctx.resume());
+  Promise.allSettled(resumes).then(results=>{if(results.some(x=>x.status==='rejected')||Array.from(LittleOrbit.contexts).some(ctx=>ctx.state!=='running'))notify('Sound is paused by your browser. Tap the game to try again; check Silent Mode and game sound settings.');});
+  if(navigator.storage?.persist)navigator.storage.persist().catch(()=>{});
+  started=true;cover.hidden=true;canvas.inert=false;canvas.focus();
+  syncTurnNote();
+ });
+ canvas.addEventListener('pointerdown',()=>{if(started)for(const ctx of LittleOrbit.contexts)if(ctx.state==='suspended')ctx.resume().catch(()=>{});},{passive:true});
+ window.addEventListener('offline',()=>notify('You are offline. This loaded session may continue, but reopening needs internet. Saves remain subject to browser storage availability.'));
+ // Do not claim persistence from a successful probe; it only detects current failure.
+ try {
+  const request=indexedDB.open('little-orbit-storage-check',1);
+  request.onupgradeneeded=()=>request.result.createObjectStore('probe');
+  request.onerror=()=>{document.getElementById('save-note').textContent='Browser storage is unavailable. Progress may be lost when you leave. Use normal Safari browsing with website data allowed.';};
+  request.onsuccess=()=>{const db=request.result;try{const tx=db.transaction('probe','readwrite');tx.objectStore('probe').put('ok','check');tx.onerror=request.onerror;tx.oncomplete=()=>db.close();}catch(e){db.close();request.onerror();}};
+ } catch(e){document.getElementById('save-note').textContent='Browser storage is unavailable. Progress may be lost when you leave.';}
+ window.addEventListener('error',event=>{if(loading)fail(event.error||event.message);});
+ window.addEventListener('unhandledrejection',event=>{if(loading)fail(event.reason);});
+ const slow=setTimeout(()=>{if(loading)status.textContent='Still loading… the first visit can take a little longer. Keep this tab open.';},20000);
+ try {
+  if(typeof Engine==='undefined')throw new Error('The game engine did not download.');
+  const config={"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":9168600,"index.wasm":39513091},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+  // Explicit desktop preview only; real touch devices need no query parameter.
+  // Preserve engine flags and place the preview flag after Godot's user separator.
+  if(new URLSearchParams(location.search).get('touch')==='1'){
+   const args=Array.from(config.args||[]);
+   if(!args.includes('--')&&!args.includes('++'))args.push('--');
+   args.push('--touch-test');
+   config.args=args;
+  }
+  const missing=Engine.getMissingFeatures({threads:false});
+  if(missing.length)throw new Error('This browser is missing: '+missing.join(', '));
+  const engine=new Engine(config);
+  engine.startGame({canvas,canvasResizePolicy:0,focusCanvas:false,onProgress:(current,total)=>{if(total>0){progress.max=total;progress.value=current;}else{progress.removeAttribute('value');}},onExit:()=>fail('The game has closed.')}).then(()=>{clearTimeout(slow);loading=false;if(failed)return;status.textContent='Your neighborhood is ready.';progress.hidden=true;play.disabled=false;play.textContent='Play';},fail);
+ } catch(error){fail(error);}
+})();
+</script>
+</body>
+</html>
+
